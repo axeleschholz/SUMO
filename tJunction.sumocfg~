@@ -5,6 +5,8 @@
     </input>
     <output>
         <tripinfo-output value="tripinfo.xml"/>
+        <emission-output value="emission.xml"/>
+        <edge-output value="edge_data.xml"/>
     </output>
     <time>
         <begin value="0"/>
