@@ -1,18 +1,32 @@
 import traci
+import sys
+from helpers import loadParams
+
+if len(sys.argv) > 2:
+    filepath = sys.argv[1]
+    index = int(sys.argv[2])
+else:
+    print("Usage: testrun.py filepath, index")
+    sys.exit(1)
+
+params = loadParams(filepath, index)
+simulation_type = params["control_type"]
 
 YELLOW_LIGHT_DURATION = 3
 MIN_LIGHT_DURATION = 20
+STATIC_LIGHT_DURATION=42
 
 def setState(junction_id, state):
     traci.trafficlight.setRedYellowGreenState(junction_id, state)
     return state
     
 class Junction:
-    def __init__(self, junction_id, state):
+    def __init__(self, junction_id, state, static_state=None):
         self.junction_id = junction_id
         self.state = state
         self.queue = [] #queue of objects with {"state": "duration":}
         self.wait = 0
+        self.static_state = static_state
         
     def step(self):
         if self.wait > 0:
@@ -41,13 +55,15 @@ def transitionState(state):
     
     return new_state
 
-def transition(junction, new_state):
+def transition(junction, new_state, duration=None):
     if len(junction.queue) > 0:
-        return
+        return False
     transition_state = transitionState(junction.state)
     junction.addAction(transition_state, YELLOW_LIGHT_DURATION)
-    junction.addAction(new_state, MIN_LIGHT_DURATION)
-    return
+    if duration is None:
+        duration=MIN_LIGHT_DURATION
+    junction.addAction(new_state, duration)
+    return True
     
 
 def classify_lanes(incLanes):
@@ -91,17 +107,44 @@ def control_traffic_lights_dynamic():
             junction.step()
                 
         step += 1
-        
-def densityAlgorithm():
-    pass
 
-def greenWaveAlgorithm():
-    pass
+def check_static_junction(junction, states):
+    if len(junction.queue) > 0:
+        return False
+    
+    junction.static_state = (junction.static_state + 1) % len(states)
+    new_state = states[junction.static_state]
+    transition(junction, new_state["state"], news_state["duration"])
+    return True
+    
+    
+def control_traffic_lights_static():
+    step = 0
+    states = [{'state': "GGgrrrrGGgrrrr", 'duration': 40}, 
+            {'state': "rrrrrrGrrrrrrG", 'duration': 20}, 
+            {'state': "rrrGGGgrrrGGGg", 'duration': 100}]
+    junction_ids = ['J0', 'J1', 'J2']
+    junctions = [Junction(junction_id, initial_state, -1) for junction_id in junction_ids]
+    
+    while traci.simulation.getMinExpectedNumber() > 0:
+        traci.simulationStep()
+        
+        for junction in junctions:
+            check_static_junction(junction, states)
+            junction.step()
+                
+        step += 1
+        
     
 def run():
     sumoCmd = ['sumo-gui', '-c', 'tJunction.sumocfg']
     traci.start(sumoCmd)
-    control_traffic_lights_dynamic()    
+    if(simulation_type == "basic"):
+        control_traffic_lights_dynamic() 
+    elif(simulation_type == "intelligent"):
+        control_traffic_lights_static()
+    else:
+        print("Something went VERY wrong")
     traci.close()
 
 if __name__ == "__main__":

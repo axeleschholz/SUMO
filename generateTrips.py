@@ -3,19 +3,22 @@
 import random
 import traci
 import sys
+from helpers import loadParams
 
-if len(sys.argv) > 1:
-    weight_value = sys.argv[1]
-    autonomous_weight = float(weight_value)
-    normal_weight = 1 - autonomous_weight
+if len(sys.argv) > 2:
+    filepath = sys.argv[1]
+    index = int(sys.argv[2])
 else:
-    print("Usage: generateTrips.py autonomous_weight")
+    print("Usage: testrun.py filepath, index")
     sys.exit(1)
 
+params = loadParams(filepath, index)
+autonomous_weight = float(params["autonomous_weight"])
+normal_weight = 1 - autonomous_weight
 
 # Template for the .rou.xml content
 rou_content = '''<trips>
-    <vType id="normal" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="33.33" guiShape="passenger"/>
+    <vType id="normal" accel="2.6" decel="4.5" sigma="0.7" length="5" maxSpeed="33.33" guiShape="passenger"/>
     <vType id="autonomous" accel="2.6" decel="4.5" sigma="0.0" length="5" maxSpeed="33.33" guiShape="passenger" color="0,255,0" carFollowModel="Krauss" lcStrategic="5.0" lcCooperative="5.0" lcSpeedGain="5.0" lcKeepRight="1.0" />
 '''
 
@@ -43,7 +46,7 @@ for from_edge in from_edges:
 vehicle_id = 0
 depart_time = 0
 def chooseType():
-    return random.choices(population=["normal","autonomous"], weights=[notmal_weight, autonomous_weight], k=1)[0]
+    return random.choices(population=["normal","autonomous"], weights=[normal_weight, autonomous_weight], k=1)[0]
 
 for j in range(1000):
     route = random.choice(routes)

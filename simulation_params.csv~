@@ -1,0 +1,4 @@
+run_id,autonomous_weight,control_type
+0,0.4,basic
+1,0.2,green_wave
+2,0.9,dense
