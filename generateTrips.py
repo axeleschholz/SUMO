@@ -1,24 +1,30 @@
-# Define the number of vehicles to generate for each route
+
+#duarouter --net-file tJunction.net.xml --trip-files tJunction.trips.xml --output-file tJunction.rou.xml
 import random
 import traci
 import sys
 
 if len(sys.argv) > 1:
-    weights_str = sys.argv[1]
-    normal_weight, autonomous_weight = map(float, weights_str.split(','))
+    weight_value = sys.argv[1]
+    autonomous_weight = float(weight_value)
+    normal_weight = 1 - autonomous_weight
 else:
-    print("Usage: routeGeneration.py normal_weight,autonomous_weight")
+    print("Usage: generateTrips.py autonomous_weight")
     sys.exit(1)
 
+
 # Template for the .rou.xml content
-rou_content = '''<routes>
+rou_content = '''<trips>
     <vType id="normal" accel="2.6" decel="4.5" sigma="0.5" length="5" maxSpeed="33.33" guiShape="passenger"/>
     <vType id="autonomous" accel="2.6" decel="4.5" sigma="0.0" length="5" maxSpeed="33.33" guiShape="passenger" color="0,255,0" carFollowModel="Krauss" lcStrategic="5.0" lcCooperative="5.0" lcSpeedGain="5.0" lcKeepRight="1.0" />
 '''
 
 from_edges = ['A0', 'A7', 'L0', 'L2', 'L4', 'L6', 'L8', 'L10']
 to_edges = ['A1', 'A6', 'L1', 'L3', 'L5', 'L7', 'L9', 'L11']
-invalid_routes = [{"from": "A0", "to": "A1"}, {"from": "A7", "to": "A6"}]
+invalid_routes = [{"from": "A0", "to": "A1"}, {"from": "A7", "to": "A6"}, 
+                    {"from": "L10", "to": "L11"}, {"from": "L8", "to": "L9"},
+                    {"from": "L6", "to": "L7"}, {"from": "L4", "to": "L5"},
+                    {"from": "L2", "to": "L3"}, {"from": "L0", "to": "L1"}]
 preferred_routes = [{"from": "A0", "to": "A7"}, {"from": "A1", "to": "A6"}]  # Routes to be weighted higher
 
 # Generate all possible routes, excluding the specified invalid routes
@@ -33,30 +39,21 @@ for from_edge in from_edges:
             if route in preferred_routes:
                 routes.extend([route] * 2)  # Add 2 more instances for a total of 3
 
-
-depart_time = 0
-
-sumoCmd = ['sumo-gui', '-c', 'tJunction.sumocfg']
-traci.start(sumoCmd)
 # Generate vehicles for each route
 vehicle_id = 0
-for i, route in enumerate(routes):
-    edges = route = traci.simulation.findRoute(route["from"], route["to"]).edges
-    rou_content += f'    <route id="route_{i}" edges="{edges}" />\n'
-
+depart_time = 0
 def chooseType():
-    return random.choices(population=["normal","autonomous"], weights=[0.8, 0.2], k=1)[0]
+    return random.choices(population=["normal","autonomous"], weights=[notmal_weight, autonomous_weight], k=1)[0]
 
 for j in range(1000):
-    rou_content += f'    <vehicle id="veh_{vehicle_id}" type="{chooseType()}" route="route_{random.randrange(0, len(routes))}" depart="{depart_time}"/>\n'
-    depart_time += random.randrange(1, 6)
+    route = random.choice(routes)
+    rou_content += f'    <trip id="veh_{vehicle_id}" type="{chooseType()}" from="{route["from"]}" to="{route["to"]}" depart="{depart_time}"/>\n'
+    depart_time += random.randrange(1,3)
     vehicle_id += 1
 
 
-rou_content += '</routes>'
+rou_content += '</trips>'
 # Save to a .rou.xml file
-rou_file_path = 'tjunction.rou.xml'
+rou_file_path = 'tjunction.trips.xml'
 with open(rou_file_path, 'w') as file:
     file.write(rou_content)
-
-traci.close()

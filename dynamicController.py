@@ -1,15 +1,34 @@
 import traci
 
 YELLOW_LIGHT_DURATION = 3
+MIN_LIGHT_DURATION = 20
 
-def getQueueLength(edgeID):
-    return traci.edge.getLastStepHaltingNumber(edgeID)
-
-def setPhase(phase):
-    return traci.trafficlight.setPhase('J1', phase)
-
-def setState(state, duration=0):
-    traci.trafficlight.setRedYellowGreenState('J1', state)
+def setState(junction_id, state):
+    traci.trafficlight.setRedYellowGreenState(junction_id, state)
+    return state
+    
+class Junction:
+    def __init__(self, junction_id, state):
+        self.junction_id = junction_id
+        self.state = state
+        self.queue = [] #queue of objects with {"state": "duration":}
+        self.wait = 0
+        
+    def step(self):
+        if self.wait > 0:
+            self.wait -= 1
+            return
+        else:
+            if len(self.queue) > 0:
+                action = self.queue.pop(0)
+                self.state = setState(self.junction_id, action['state'])
+                self.wait = action['duration']
+                return
+        return
+        
+    def addAction(self, state, duration):
+        self.queue.append({"state": state, "duration":duration})
+    
 
 
 def transitionState(state):
@@ -22,39 +41,68 @@ def transitionState(state):
     
     return new_state
 
-def transition(current_state, new_state):
-    transition_state = transitionState(current_state)
-    setState(transitionState, YELLOW_LIGHT_DURATION)
-    setState(new_state)
-    return new_state
+def transition(junction, new_state):
+    if len(junction.queue) > 0:
+        return
+    transition_state = transitionState(junction.state)
+    junction.addAction(transition_state, YELLOW_LIGHT_DURATION)
+    junction.addAction(new_state, MIN_LIGHT_DURATION)
+    return
     
-def main():
+
+def classify_lanes(incLanes):
+    # Placeholder logic: adjust based on your actual network setup
+    # For example, main road lanes might have specific naming conventions
+    main_road_lanes = [lane for lane in incLanes if "A" in lane]
+    side_road_lanes = [lane for lane in incLanes if "L" in lane]
+    return main_road_lanes, side_road_lanes
+
+# Function to get the total queue length for main and side roads at a junction
+def get_queue_length_by_road_type(junction_id):
+    incLanes = traci.trafficlight.getControlledLanes(junction_id)
+    main_road_lanes, side_road_lanes = classify_lanes(incLanes)
+    main_queue_length = sum([traci.lane.getLastStepHaltingNumber(lane) for lane in main_road_lanes])
+    side_queue_length = sum([traci.lane.getLastStepHaltingNumber(lane) for lane in side_road_lanes])
+    return main_queue_length, side_queue_length
+    
+def evaluate_junction(junction):
+    queue_length_main, queue_length_side = get_queue_length_by_road_type(junction.junction_id)  
+    
+    # Decide new state based on queue lengths
+    if queue_length_side > queue_length_main:
+        new_state = "GGgrrrrGGgrrrr"  # Favor side road
+    else:
+        new_state = "rrrGGGgrrrGGGg"  # Favor main road
+    
+    transition(junction, new_state)
+
+
+def control_traffic_lights_dynamic():
+    step = 0
+    initial_state = "rrrGGGgrrrGGGg"
+    junction_ids = ['J0', 'J1', 'J2']
+    junctions = [Junction(junction_id, initial_state) for junction_id in junction_ids]
+    
+    while traci.simulation.getMinExpectedNumber() > 0:
+        traci.simulationStep()
+        
+        for junction in junctions:
+            evaluate_junction(junction)
+            junction.step()
+                
+        step += 1
+        
+def densityAlgorithm():
+    pass
+
+def greenWaveAlgorithm():
+    pass
+    
+def run():
     sumoCmd = ['sumo-gui', '-c', 'tJunction.sumocfg']
     traci.start(sumoCmd)
-    state = 'rrrrrrrrrrrr'
-
-    while traci.simulation.getMinExpectedNumber() > 0:
-        # Checking queue lengths on incoming edges
-        queue0 = getQueueLength('L2')
-        queue1 = getQueueLength('L4')
-        queue2 = getQueueLength('L6')
-        queue3 = getQueueLength('L0')
-
-        # Determine which edge has the highest demand
-        maxQueue = max(queue0, queue1, queue2, queue3)
-        if maxQueue == queue0:
-            state = transition(state, 'GGgrrrrrrrrr')
-        elif maxQueue == queue1:
-            state = transition(state, 'rrrGGgrrrrrr')
-        elif maxQueue == queue2:
-            state = transition(state, 'rrrrrrGGgrrr')
-        elif maxQueue == queue3:
-            state = transition(state, 'rrrrrrrrrGGg')
-
-
-        traci.simulationStep()
-
+    control_traffic_lights_dynamic()    
     traci.close()
 
 if __name__ == "__main__":
-    main()
+    run()
