@@ -1,0 +1,13 @@
+run_id,autonomous_weight,control_type,throughput,average_waiting_time
+0,0,basic,29.64426877,110.893
+1,0.2,basic,32.17158177,105.602
+2,0.4,basic,32.15434084,106.33
+3,0.6,basic,32.71537623,106.152
+4,0.8,basic,35.94967046,101.482
+5,1,basic,39.19007185,101.58
+6,0,intelligent,43.16546763,115.186
+7,0.2,intelligent,40.08016032,126.471
+8,0.4,intelligent,39.70880212,109.188
+9,0.6,intelligent,44.51038576,102.562
+10,0.8,intelligent,47.46835443,97.287
+11,1,intelligent,47.35595896,91.714

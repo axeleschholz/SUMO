@@ -18,7 +18,7 @@ normal_weight = 1 - autonomous_weight
 
 # Template for the .rou.xml content
 rou_content = '''<trips>
-    <vType id="normal" accel="2.6" decel="4.5" sigma="0.7" length="5" maxSpeed="33.33" guiShape="passenger"/>
+    <vType id="normal" accel="2.6" decel="4.5" sigma="0.7" tau="1.2" length="5" maxSpeed="33.33" guiShape="passenger"/>
     <vType id="autonomous" accel="2.6" decel="4.5" sigma="0.0" length="5" maxSpeed="33.33" guiShape="passenger" color="0,255,0" carFollowModel="Krauss" lcStrategic="5.0" lcCooperative="5.0" lcSpeedGain="5.0" lcKeepRight="1.0" />
 '''
 
@@ -51,7 +51,7 @@ def chooseType():
 for j in range(1000):
     route = random.choice(routes)
     rou_content += f'    <trip id="veh_{vehicle_id}" type="{chooseType()}" from="{route["from"]}" to="{route["to"]}" depart="{depart_time}"/>\n'
-    depart_time += random.randrange(1,3)
+    depart_time += 3
     vehicle_id += 1
 
 

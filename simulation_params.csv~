@@ -1,4 +1,13 @@
 run_id,autonomous_weight,control_type
-0,0.4,basic
-1,0.2,green_wave
-2,0.9,dense
+0,0,basic
+1,0.2,basic
+2,0.4,basic
+3,0.6,basic
+4,0.8,basic
+5,1,basic
+6,0,intelligent
+7,0.2,intelligent
+8,0.4,intelligent
+9,0.6,intelligent
+10,0.8,intelligent
+11,1,intelligent

@@ -114,16 +114,16 @@ def check_static_junction(junction, states):
     
     junction.static_state = (junction.static_state + 1) % len(states)
     new_state = states[junction.static_state]
-    transition(junction, new_state["state"], news_state["duration"])
+    transition(junction, new_state["state"], new_state["duration"])
     return True
     
     
 def control_traffic_lights_static():
     step = 0
     states = [{'state': "GGgrrrrGGgrrrr", 'duration': 40}, 
-            {'state': "rrrrrrGrrrrrrG", 'duration': 20}, 
-            {'state': "rrrGGGgrrrGGGg", 'duration': 100}]
+              {'state': "rrrGGGgrrrGGGg", 'duration': 100}]
     junction_ids = ['J0', 'J1', 'J2']
+    initial_state = "rrrGGGgrrrGGGg"
     junctions = [Junction(junction_id, initial_state, -1) for junction_id in junction_ids]
     
     while traci.simulation.getMinExpectedNumber() > 0:
@@ -140,9 +140,9 @@ def run():
     sumoCmd = ['sumo-gui', '-c', 'tJunction.sumocfg']
     traci.start(sumoCmd)
     if(simulation_type == "basic"):
-        control_traffic_lights_dynamic() 
+        control_traffic_lights_static() 
     elif(simulation_type == "intelligent"):
-        control_traffic_lights_static()
+        control_traffic_lights_dynamic()
     else:
         print("Something went VERY wrong")
     traci.close()
